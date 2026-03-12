@@ -37,3 +37,4 @@
 | St_ItemCount        | INT    | Count of detected items |
 | Int_SortDecision    | BOOL   | Internal sort decision |
 | Int_BlockTimer      | TIME   | Sensor blocked timer |
+| Int_BlockCounter    | TIME   | Sensor blocked counter |

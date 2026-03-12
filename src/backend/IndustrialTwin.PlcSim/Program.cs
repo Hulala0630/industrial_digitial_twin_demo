@@ -7,8 +7,10 @@ Console.WriteLine("Commands:");
 Console.WriteLine(" start  -> start conveyor");
 Console.WriteLine(" stop   -> stop conveyor");
 Console.WriteLine(" sensor -> simulate sensor trigger");
+Console.WriteLine(" block  -> simulate blocked sensor / jam fault");
 Console.WriteLine(" reset  -> reset fault");
 Console.WriteLine(" status -> print current state");
+Console.WriteLine(" cycle  -> execute one empty cycle");
 Console.WriteLine(" exit   -> quit");
 Console.WriteLine();
 
@@ -38,6 +40,15 @@ while (true)
             plc.ExecuteCycle();
             break;
 
+        case "block":
+            // simulate sensor blocked for multiple cycles
+            plc.In_SensorEntry = true;
+            for (int i = 0; i < 5; i++)
+            {
+                plc.ExecuteCycle();
+            }
+            break;
+
         case "reset":
             plc.Cmd_Reset = true;
             plc.ExecuteCycle();
@@ -46,6 +57,10 @@ while (true)
 
         case "status":
             plc.PrintStatus();
+            break;
+
+        case "cycle":
+            plc.ExecuteCycle();
             break;
 
         case "exit":
@@ -80,7 +95,8 @@ public class PlcSimulator
 
     // Internal
     public bool Int_SortDecision { get; set; }
-
+    public int Int_BlockCounter { get; set; }
+    private const int BlockThreshold = 3;
     private bool _lastSensorState = false;
 
     public void ExecuteCycle()
@@ -91,17 +107,15 @@ public class PlcSimulator
             St_Fault = false;
             Out_AlarmLamp = false;
             Out_SortGateOpen = false;
+            Int_BlockCounter = 0;
         }
 
         // Start / Stop
-        if (!St_Fault)
-        {
-            if (Cmd_Start)
-                St_Running = true;
+        if (Cmd_Stop)
+            St_Running = false;
 
-            if (Cmd_Stop)
-                St_Running = false;
-        }
+        if (Cmd_Start && !St_Fault)
+            St_Running = true;
 
         // Conveyor output follows running state
         Out_ConveyorRun = St_Running;
@@ -110,6 +124,36 @@ public class PlcSimulator
         St_SensorOccupied = In_SensorEntry;
 
         // Rising edge detection for sensor
+        if (St_Running && In_SensorEntry)
+        {
+            Int_BlockCounter++;
+        }
+        else
+        {
+            Int_BlockCounter = 0;
+        }
+
+        // 6. Fault trigger
+        if (Int_BlockCounter >= BlockThreshold)
+        {
+            St_Fault = true;
+        }
+
+        // 7. Fault reaction
+        if (St_Fault)
+        {
+            St_Running = false;
+            Out_ConveyorRun = false;
+            Out_AlarmLamp = true;
+            Out_SortGateOpen = false;
+        }
+        else
+        {
+            Out_AlarmLamp = false;
+            Out_ConveyorRun = St_Running;
+        }
+
+        // 8. Rising edge detection for normal item count / sorting
         bool risingEdge = In_SensorEntry && !_lastSensorState;
 
         if (risingEdge && St_Running && !St_Fault)
@@ -121,7 +165,7 @@ public class PlcSimulator
             Int_SortDecision = St_ItemCount % 2 == 0;
             Out_SortGateOpen = Int_SortDecision;
         }
-        else
+        else if (!St_Fault)
         {
             Out_SortGateOpen = false;
         }
@@ -144,7 +188,8 @@ public class PlcSimulator
             St_Fault,
             St_ItemCount,
             St_SensorOccupied,
-            Int_SortDecision
+            Int_SortDecision,
+            Int_BlockCounter
         };
 
         Console.WriteLine(JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
