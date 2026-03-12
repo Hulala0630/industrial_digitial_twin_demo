@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+Library/
+Temp/
+Build/
+Logs/
+UserSettings/
+*.user
+*.suo
+*.tmp
+*.log
