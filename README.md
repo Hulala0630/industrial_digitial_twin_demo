@@ -1,48 +1,59 @@
 # Industrial Digital Twin Demo
 
-A locally runnable industrial digital twin demo for a simple conveyor system.
+A simplified industrial digital twin system demonstrating:
 
-## Project Goal
-
-This project is built to demonstrate core capabilities relevant to Simulation Engineer, Solution Engineer, and Digital Twin related roles.
-
-It focuses on:
-
-- industrial system architecture
-- PLC control logic
-- industrial communication
-- software integration
-- simulation and visualization
-
-## Demo Scope
-
-The demo simulates a simple conveyor system with:
-
-- sensor detection
-- conveyor start/stop control
-- simple sorting logic
-- PLC-based control
+- PLC logic simulation
 - OPC UA communication
-- Unity-based visualization
-- C# REST API interface
+- REST API integration
+- Unity 3D visualization
 
-## Planned Tech Stack
+## Architecture
 
-- OpenPLC
+PLC Simulator  
+↓  
+OPC UA Server  
+↓  
+REST API (.NET)  
+↓  
+Unity 3D Simulation
+
+## Features
+
+- Conveyor simulation
+- Sensor detection
+- Sorting gate logic
+- REST control interface
+- HMI panel in Unity
+
+## Tech Stack
+
+Backend
+- C#
+- .NET
 - OPC UA
+
+Simulation
 - Unity
-- C# .NET Web API
-- Docker
 
-## Planned Project Structure
+Communication
+- OPC UA
+- REST API
 
-```text
-src/
-  backend/
-  plc/
-  simulation/
+## Project Structure
+src/backend
+IndustrialTwin.Api
+IndustrialTwin.OpcUa
+IndustrialTwin.PlcSim
+
+unity/IndustrialTwinUnity
 
 docs/
-  architecture.md
-  tag-list.md
-  state-machine.md
+
+
+## Demo Workflow
+
+1. Start OPC UA server
+2. Start API
+3. Run Unity scene
+4. Generate items from HMI
+5. PLC controls conveyor and sorting gate
