@@ -38,3 +38,40 @@
 | Int_SortDecision    | BOOL   | Internal sort decision |
 | Int_BlockTimer      | TIME   | Sensor blocked timer |
 | Int_BlockCounter    | TIME   | Sensor blocked counter |
+
+## OPC UA Mapping
+
+| Tag Name           | Data Type | Access      | OPC UA NodeId              | Description |
+|--------------------|-----------|-------------|----------------------------|-------------|
+| Cmd_Start          | BOOL      | Read/Write  | ns=2;s=Cmd_Start           | Start command |
+| Cmd_Stop           | BOOL      | Read/Write  | ns=2;s=Cmd_Stop            | Stop command |
+| Cmd_Reset          | BOOL      | Read/Write  | ns=2;s=Cmd_Reset           | Reset command |
+| In_SensorEntry     | BOOL      | Read/Write  | ns=2;s=In_SensorEntry      | Entry sensor input |
+| St_Running         | BOOL      | Read Only   | ns=2;s=St_Running          | Running status |
+| St_Fault           | BOOL      | Read Only   | ns=2;s=St_Fault            | Fault status |
+| St_ItemCount       | INT       | Read Only   | ns=2;s=St_ItemCount        | Item counter |
+| St_SensorOccupied  | BOOL      | Read Only   | ns=2;s=St_SensorOccupied   | Sensor occupied status |
+| Out_ConveyorRun    | BOOL      | Read Only   | ns=2;s=Out_ConveyorRun     | Conveyor motor output |
+| Out_SortGateOpen   | BOOL      | Read Only   | ns=2;s=Out_SortGateOpen    | Sort gate output |
+| Out_AlarmLamp      | BOOL      | Read Only   | ns=2;s=Out_AlarmLamp       | Alarm lamp output |
+
+IndustrialTwin
+ └── Conveyor01
+      ├── Commands
+      │    ├── Start
+      │    ├── Stop
+      │    └── Reset
+      │
+      ├── Inputs
+      │    └── SensorEntry
+      │
+      ├── Outputs
+      │    ├── ConveyorRun
+      │    ├── SortGateOpen
+      │    └── AlarmLamp
+      │
+      └── Status
+           ├── Running
+           ├── Fault
+           ├── ItemCount
+           └── SensorOccupied

@@ -1,17 +1,20 @@
 ﻿using System.Text.Json;
+using IndustrialTwin.Core;
+using IndustrialTwin.PlcSim;
 
-var plc = new PlcSimulator();
+var state = new PlcStateModel();
+var simulator = new PlcSimulator(state);
 
 Console.WriteLine("Industrial Twin PLC Simulator Started");
 Console.WriteLine("Commands:");
-Console.WriteLine(" start  -> start conveyor");
-Console.WriteLine(" stop   -> stop conveyor");
-Console.WriteLine(" sensor -> simulate sensor trigger");
-Console.WriteLine(" block  -> simulate blocked sensor / jam fault");
-Console.WriteLine(" reset  -> reset fault");
-Console.WriteLine(" status -> print current state");
-Console.WriteLine(" cycle  -> execute one empty cycle");
-Console.WriteLine(" exit   -> quit");
+Console.WriteLine(" start   -> start conveyor");
+Console.WriteLine(" stop    -> stop conveyor");
+Console.WriteLine(" sensor  -> simulate normal sensor trigger");
+Console.WriteLine(" block   -> simulate blocked sensor / jam fault");
+Console.WriteLine(" reset   -> reset fault");
+Console.WriteLine(" status  -> print current state");
+Console.WriteLine(" cycle   -> execute one empty cycle");
+Console.WriteLine(" exit    -> quit");
 Console.WriteLine();
 
 while (true)
@@ -22,45 +25,42 @@ while (true)
     switch (input)
     {
         case "start":
-            plc.Cmd_Start = true;
-            plc.ExecuteCycle();
-            plc.Cmd_Start = false;
+            state.Cmd_Start = true;
+            simulator.ExecuteCycle();
             break;
 
         case "stop":
-            plc.Cmd_Stop = true;
-            plc.ExecuteCycle();
-            plc.Cmd_Stop = false;
+            state.Cmd_Stop = true;
+            simulator.ExecuteCycle();
             break;
 
         case "sensor":
-            plc.In_SensorEntry = true;
-            plc.ExecuteCycle();
-            plc.In_SensorEntry = false;
-            plc.ExecuteCycle();
+            state.In_SensorEntry = true;
+            simulator.ExecuteCycle();
+
+            state.In_SensorEntry = false;
+            simulator.ExecuteCycle();
             break;
 
         case "block":
-            // simulate sensor blocked for multiple cycles
-            plc.In_SensorEntry = true;
+            state.In_SensorEntry = true;
             for (int i = 0; i < 5; i++)
             {
-                plc.ExecuteCycle();
+                simulator.ExecuteCycle();
             }
             break;
 
         case "reset":
-            plc.Cmd_Reset = true;
-            plc.ExecuteCycle();
-            plc.Cmd_Reset = false;
-            break;
-
-        case "status":
-            plc.PrintStatus();
+            state.Cmd_Reset = true;
+            simulator.ExecuteCycle();
             break;
 
         case "cycle":
-            plc.ExecuteCycle();
+            simulator.ExecuteCycle();
+            break;
+
+        case "status":
+            PrintStatus(state);
             break;
 
         case "exit":
@@ -72,129 +72,27 @@ while (true)
     }
 }
 
-public class PlcSimulator
+static void PrintStatus(PlcStateModel state)
 {
-    // Commands
-    public bool Cmd_Start { get; set; }
-    public bool Cmd_Stop { get; set; }
-    public bool Cmd_Reset { get; set; }
-
-    // Inputs
-    public bool In_SensorEntry { get; set; }
-
-    // Outputs
-    public bool Out_ConveyorRun { get; set; }
-    public bool Out_SortGateOpen { get; set; }
-    public bool Out_AlarmLamp { get; set; }
-
-    // Status
-    public bool St_Running { get; set; }
-    public bool St_Fault { get; set; }
-    public int St_ItemCount { get; set; }
-    public bool St_SensorOccupied { get; set; }
-
-    // Internal
-    public bool Int_SortDecision { get; set; }
-    public int Int_BlockCounter { get; set; }
-    private const int BlockThreshold = 3;
-    private bool _lastSensorState = false;
-
-    public void ExecuteCycle()
+    var snapshot = new
     {
-        // Reset
-        if (Cmd_Reset)
-        {
-            St_Fault = false;
-            Out_AlarmLamp = false;
-            Out_SortGateOpen = false;
-            Int_BlockCounter = 0;
-        }
+        state.Cmd_Start,
+        state.Cmd_Stop,
+        state.Cmd_Reset,
+        state.In_SensorEntry,
+        state.Out_ConveyorRun,
+        state.Out_SortGateOpen,
+        state.Out_AlarmLamp,
+        state.St_Running,
+        state.St_Fault,
+        state.St_ItemCount,
+        state.St_SensorOccupied,
+        state.Int_SortDecision,
+        state.Int_BlockCounter
+    };
 
-        // Start / Stop
-        if (Cmd_Stop)
-            St_Running = false;
-
-        if (Cmd_Start && !St_Fault)
-            St_Running = true;
-
-        // Conveyor output follows running state
-        Out_ConveyorRun = St_Running;
-
-        // Sensor status
-        St_SensorOccupied = In_SensorEntry;
-
-        // Rising edge detection for sensor
-        if (St_Running && In_SensorEntry)
-        {
-            Int_BlockCounter++;
-        }
-        else
-        {
-            Int_BlockCounter = 0;
-        }
-
-        // 6. Fault trigger
-        if (Int_BlockCounter >= BlockThreshold)
-        {
-            St_Fault = true;
-        }
-
-        // 7. Fault reaction
-        if (St_Fault)
-        {
-            St_Running = false;
-            Out_ConveyorRun = false;
-            Out_AlarmLamp = true;
-            Out_SortGateOpen = false;
-        }
-        else
-        {
-            Out_AlarmLamp = false;
-            Out_ConveyorRun = St_Running;
-        }
-
-        // 8. Rising edge detection for normal item count / sorting
-        bool risingEdge = In_SensorEntry && !_lastSensorState;
-
-        if (risingEdge && St_Running && !St_Fault)
-        {
-            St_ItemCount++;
-
-            // Simple sort logic:
-            // even item -> open sort gate
-            Int_SortDecision = St_ItemCount % 2 == 0;
-            Out_SortGateOpen = Int_SortDecision;
-        }
-        else if (!St_Fault)
-        {
-            Out_SortGateOpen = false;
-        }
-
-        _lastSensorState = In_SensorEntry;
-    }
-
-    public void PrintStatus()
+    Console.WriteLine(JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
     {
-        var snapshot = new
-        {
-            Cmd_Start,
-            Cmd_Stop,
-            Cmd_Reset,
-            In_SensorEntry,
-            Out_ConveyorRun,
-            Out_SortGateOpen,
-            Out_AlarmLamp,
-            St_Running,
-            St_Fault,
-            St_ItemCount,
-            St_SensorOccupied,
-            Int_SortDecision,
-            Int_BlockCounter
-        };
-
-        Console.WriteLine(JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        }));
-    }
+        WriteIndented = true
+    }));
 }
