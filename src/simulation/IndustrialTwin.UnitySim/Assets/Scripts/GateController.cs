@@ -2,20 +2,30 @@ using UnityEngine;
 
 public class GateController : MonoBehaviour
 {
+    [Header("State")]
     public bool isOpen = false;
 
+    [Header("Rotation")]
     public Vector3 closedEuler = Vector3.zero;
-    public Vector3 openEuler = new Vector3(0, 45, 0);
-    public float rotateSpeed = 8f;
+    public Vector3 openEuler = new Vector3(0f, 90f, 0f);
+    public float rotateSpeed = 360f; // degrees per second
+
+    private Quaternion _targetRotation;
+
+    private void Start()
+    {
+        _targetRotation = Quaternion.Euler(isOpen ? openEuler : closedEuler);
+        transform.localRotation = _targetRotation;
+    }
 
     private void Update()
     {
-        Quaternion targetRotation = Quaternion.Euler(isOpen ? openEuler : closedEuler);
+        _targetRotation = Quaternion.Euler(isOpen ? openEuler : closedEuler);
 
-        transform.localRotation = Quaternion.Lerp(
+        transform.localRotation = Quaternion.RotateTowards(
             transform.localRotation,
-            targetRotation,
-            Time.deltaTime * rotateSpeed
+            _targetRotation,
+            rotateSpeed * Time.deltaTime
         );
     }
 
