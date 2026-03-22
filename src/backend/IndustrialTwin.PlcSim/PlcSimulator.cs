@@ -6,7 +6,7 @@ public class PlcSimulator
 {
     private readonly PlcStateModel _state;
     private bool _lastSensorState = false;
-    private const int BlockThreshold = 10;
+    private const int BlockThreshold = 5;
 
     public PlcSimulator(PlcStateModel state)
     {
